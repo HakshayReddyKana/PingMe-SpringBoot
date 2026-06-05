@@ -12,13 +12,37 @@ import java.util.UUID;
 @Repository
 public interface ConversationRepo extends JpaRepository<Conversation, UUID> {
 
-    // 1. Find all conversations for a specific user (to show in the sidebar)
-    @Query("SELECT c FROM Conversation c JOIN c.participants p WHERE p.id = :userId")
+    // 1. Find all conversations for a specific user (either accepted or pending)
+    @Query("SELECT DISTINCT c FROM Conversation c LEFT JOIN c.participants p LEFT JOIN c.pendingParticipants pp WHERE p.id = :userId OR pp.id = :userId")
     List<Conversation> findAllByParticipantId(@Param("userId") Long userId);
 
-    // 2. Magic query: Check if a Direct Message already exists between two specific users
-    @Query("SELECT c FROM Conversation c JOIN c.participants p1 JOIN c.participants p2 " +
-            "WHERE c.type = 'direct' AND p1.id = :userOneId AND p2.id = :userTwoId")
-    Conversation findDirectConversation(@Param("userOneId") Long userOneId, @Param("userTwoId") Long userTwoId);
+    // 2. Magic query: Check if a Direct Message already exists between two specific users (including pending state)
+    @Query("""
+    SELECT c
+    FROM Conversation c
+    WHERE c.type = 'direct'
+      AND (
+            :userOneId IN (
+                SELECT p.id FROM c.participants p
+            )
+            OR
+            :userOneId IN (
+                SELECT pp.id FROM c.pendingParticipants pp
+            )
+      )
+      AND (
+            :userTwoId IN (
+                SELECT p.id FROM c.participants p
+            )
+            OR
+            :userTwoId IN (
+                SELECT pp.id FROM c.pendingParticipants pp
+            )
+      )
+""")
+    Conversation findDirectConversation(
+            @Param("userOneId") Long userOneId,
+            @Param("userTwoId") Long userTwoId
+    );
 }
 

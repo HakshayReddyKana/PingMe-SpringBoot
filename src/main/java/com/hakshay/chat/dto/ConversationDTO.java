@@ -13,5 +13,7 @@ public record ConversationDTO(
         Instant createdAt,
         Set<User> participants,
         Message lastMessage,
-        long unreadCount
+        long unreadCount,
+        Set<User> pendingParticipants,
+        Long initiatorId
 ) {}

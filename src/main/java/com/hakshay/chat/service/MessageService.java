@@ -11,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -20,16 +19,57 @@ public class MessageService {
     private final MessageRepo messageRepo;
     private final ConversationRepo conversationRepo;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserService userService;
 
     public record ReadReceipt(Long userId, UUID conversationId, String status) {}
 
 
-    public MessageService(MessageRepo messageRepo, ConversationRepo conversationRepo, SimpMessagingTemplate messagingTemplate) {
+    public MessageService(MessageRepo messageRepo, ConversationRepo conversationRepo, SimpMessagingTemplate messagingTemplate, UserService userService) {
         this.messageRepo = messageRepo;
         this.conversationRepo = conversationRepo;
         this.messagingTemplate = messagingTemplate;
+        this.userService = userService;
     }
 
+    public Message processAndSendMessage(Message message, String senderUsername) {
+        User me = userService.getUserByUsername(senderUsername);
+
+        // message.getConversation() might be null depending on your STOMP payload,
+        // so ensure the frontend sends the conversation ID!
+        UUID convId = message.getConversation() != null ? message.getConversation().getId() : null;
+        if (convId == null) {
+            throw new IllegalArgumentException("Conversation ID is missing in the message payload");
+        }
+
+        Conversation conv = conversationRepo.findById(convId).orElseThrow();
+        // 1. Prevent sending if YOU are still pending!
+        if (conv.getPendingParticipants().stream().anyMatch(u -> u.getId() == me.getId())) {
+            throw new SecurityException("You must accept the invitation before sending messages.");
+        }
+        
+        // 1.b Prevent sending if it's a direct message and the other person is still pending!
+        if ("direct".equalsIgnoreCase(conv.getType()) && !conv.getPendingParticipants().isEmpty()) {
+            throw new SecurityException("You cannot send messages until the other user accepts the invitation.");
+        }
+        // 2. Prevent sending if blocked by any active participant!
+        for (User participant : conv.getParticipants()) {
+            if (!participant.getId().equals(me.getId())) {
+                if (participant.getBlockedUsers().contains(me)) {
+                    throw new SecurityException("You have been blocked by a user in this chat.");
+                }
+            }
+        }
+        // 3. Save message
+        message.setSender(me);
+        message.setConversation(conv);
+        message.setStatus("sent");
+        Message savedMessage = messageRepo.save(message);
+
+        // 4. Broadcast over STOMP
+        messagingTemplate.convertAndSend("/topic/conversation/" + conv.getId(), savedMessage);
+        
+        return savedMessage;
+    }
     public Page<Message> getMessages(UUID conversationId, int page, int size) {
         return messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, PageRequest.of(page, size));
     }

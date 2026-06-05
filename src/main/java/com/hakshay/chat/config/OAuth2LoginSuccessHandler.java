@@ -59,6 +59,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 //        authCookie.setAttribute("SameSite", "Lax"); // Critical for CSRF protection
         response.addCookie(authCookie);
 
-        getRedirectStrategy().sendRedirect(request, response, clientUrl + "/dashboard");
+        getRedirectStrategy().sendRedirect(request, response, clientUrl + "/home");
     }
 }

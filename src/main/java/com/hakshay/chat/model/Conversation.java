@@ -19,6 +19,17 @@ public class Conversation {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "initiator_id")
+    private Long initiatorId;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "conversation_pending_participants",
+            joinColumns = @JoinColumn(name = "conversation_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> pendingParticipants = new java.util.HashSet<>();
+
     @Column(nullable = false)
     private String type; // "direct" or "group"
 

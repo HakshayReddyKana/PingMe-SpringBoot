@@ -3,6 +3,8 @@ package com.hakshay.chat.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Set;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,7 +14,7 @@ import lombok.*;
 public class User {
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    long id;
+    Long id;
     String username;
     String password;
     User(String username, String password) {
@@ -30,4 +32,12 @@ public class User {
     private String bio;
 
     private String status = "offline";
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "blocked_users",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "blocked_user_id")
+    )
+    private Set<User> blockedUsers = new java.util.HashSet<>();
 }

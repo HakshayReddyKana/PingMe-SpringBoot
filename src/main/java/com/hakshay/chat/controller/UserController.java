@@ -29,6 +29,30 @@ public class UserController {
         this.presenceService = presenceService;
     }
 
+    @PostMapping("/{blockedUserId}/block")
+    public ResponseEntity<?> blockUser(@PathVariable Long blockedUserId, Principal principal) {
+        User me = userService.getUserByUsername(principal.getName());
+        User userToBlock = userService.getUserById(blockedUserId);
+
+        if (userToBlock != null) {
+            me.getBlockedUsers().add(userToBlock);
+            userDetailsService.save(me);
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{unblockedUserId}/unblock")
+    public ResponseEntity<?> unblockUser(@PathVariable Long unblockedUserId, Principal principal) {
+        User me = userService.getUserByUsername(principal.getName());
+        User userToUnblock = userService.getUserById(unblockedUserId);
+
+        if (userToUnblock != null) {
+            me.getBlockedUsers().removeIf(u -> u.getId().equals(userToUnblock.getId()));
+            userDetailsService.save(me);
+        }
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
