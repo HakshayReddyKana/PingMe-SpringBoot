@@ -18,31 +18,27 @@ public interface ConversationRepo extends JpaRepository<Conversation, UUID> {
 
     // 2. Magic query: Check if a Direct Message already exists between two specific users (including pending state)
     @Query("""
-    SELECT c
-    FROM Conversation c
-    WHERE c.type = 'direct'
-      AND (
-            :userOneId IN (
-                SELECT p.id FROM c.participants p
-            )
-            OR
-            :userOneId IN (
-                SELECT pp.id FROM c.pendingParticipants pp
-            )
-      )
-      AND (
-            :userTwoId IN (
-                SELECT p.id FROM c.participants p
-            )
-            OR
-            :userTwoId IN (
-                SELECT pp.id FROM c.pendingParticipants pp
-            )
-      )
-""")
-    Conversation findDirectConversation(
-            @Param("userOneId") Long userOneId,
-            @Param("userTwoId") Long userTwoId
-    );
+        SELECT c
+        FROM Conversation c
+        WHERE c.type = 'direct'
+          AND (
+                :userOneId IN (
+                    SELECT p.id FROM c.participants p
+                )
+                OR
+                :userOneId IN (
+                    SELECT pp.id FROM c.pendingParticipants pp
+                )
+          )
+          AND (
+                :userTwoId IN (
+                    SELECT p.id FROM c.participants p
+                )
+                OR
+                :userTwoId IN (
+                    SELECT pp.id FROM c.pendingParticipants pp
+                )
+          )
+    """)
+    Conversation findDirectConversation(@Param("userOneId") Long userOneId, @Param("userTwoId") Long userTwoId);
 }
-
