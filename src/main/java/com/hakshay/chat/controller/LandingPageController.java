@@ -47,11 +47,9 @@ public class LandingPageController {
             String avatarColor
     ) {}
 
-    // 2. In your endpoint logic, set these fields before saving
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
-
-
         User newUser = new User();
         newUser.setUsername(request.username());
 

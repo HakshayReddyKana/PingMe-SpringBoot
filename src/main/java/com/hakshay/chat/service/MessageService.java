@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -34,7 +35,7 @@ public class MessageService {
     public Message processAndSendMessage(Message message, String senderUsername) {
         User me = userService.getUserByUsername(senderUsername);
 
-        // message.getConversation() might be null depending on your STOMP payload,
+        // message.getConversation() might be null depending on STOMP payload,
         // so ensure the frontend sends the conversation ID!
         UUID convId = message.getConversation() != null ? message.getConversation().getId() : null;
         if (convId == null) {
@@ -43,7 +44,7 @@ public class MessageService {
 
         Conversation conv = conversationRepo.findById(convId).orElseThrow();
         // 1. Prevent sending if YOU are still pending!
-        if (conv.getPendingParticipants().stream().anyMatch(u -> u.getId() == me.getId())) {
+        if (conv.getPendingParticipants().stream().anyMatch(u -> Objects.equals(u.getId(), me.getId()))) {
             throw new SecurityException("You must accept the invitation before sending messages.");
         }
         
@@ -51,6 +52,7 @@ public class MessageService {
         if ("direct".equalsIgnoreCase(conv.getType()) && !conv.getPendingParticipants().isEmpty()) {
             throw new SecurityException("You cannot send messages until the other user accepts the invitation.");
         }
+
         // 2. Prevent sending if blocked by any active participant!
         for (User participant : conv.getParticipants()) {
             if (!participant.getId().equals(me.getId())) {

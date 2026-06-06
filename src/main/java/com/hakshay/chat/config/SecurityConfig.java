@@ -28,6 +28,9 @@ import java.util.List;
 public class SecurityConfig {
 
     @Autowired
+    private RateLimitingFilter rateLimitingFilter;
+
+    @Autowired
     private UserDetailsService userDetailsService;
 
     @Autowired
@@ -68,6 +71,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         ;
 
+        http.addFilterAfter(rateLimitingFilter, org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class);
+
         return http.build();
     }
 
@@ -76,9 +81,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(
-            clientUrl,
-            clientUrl.replace("https://", "https://www."),
-            "http://localhost:3000"
+                clientUrl,
+                clientUrl.replace("https://", "https://www."),
+                "http://localhost:3000"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

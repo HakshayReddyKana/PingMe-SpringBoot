@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
     @Bean
     public OpenAPI openAPI() {
-        return new OpenAPI().info(new Info().title("My Spring Starter Application")
-                .description("My SpringDoc application")
-                .version("v0.0.1"));
+        return new OpenAPI().info(new Info().title("PingMe Application")
+                .description("Chat with any one")
+                .version("v1.00"));
     }
 }

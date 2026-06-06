@@ -6,6 +6,7 @@ import com.hakshay.chat.service.MyUserDetailsService;
 import com.hakshay.chat.service.PresenceService;
 import com.hakshay.chat.service.UserService;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -53,10 +54,14 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    @GetMapping("/search")
+    public Page<User> searchUsers(@RequestParam("q") String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return Page.empty(); // Return empty page if query is null
+        }
+        return userService.searchUsers(query);
     }
+
 
     // Update the presence endpoint
     @GetMapping("/presence")

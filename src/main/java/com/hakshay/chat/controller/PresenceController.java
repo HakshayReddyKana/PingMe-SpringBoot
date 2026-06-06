@@ -22,7 +22,7 @@ public class PresenceController {
         if (authentication == null) return;
         
         String username = authentication.getName();
-        String status = payload.get("status"); // "online" or "away"
+        String status = payload.get("status");
 
         if ("away".equals(status)) {
             presenceService.setUserAway(username);

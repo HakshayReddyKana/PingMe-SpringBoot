@@ -1,5 +1,6 @@
 package com.hakshay.chat.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,7 +17,10 @@ public class User {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     Long id;
     String username;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     String password;
+
     User(String username, String password) {
         this.username = username;
         this.password = password;
