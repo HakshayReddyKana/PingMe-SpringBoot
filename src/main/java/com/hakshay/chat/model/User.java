@@ -37,6 +37,8 @@ public class User {
 
     private String status = "offline";
 
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "blocked_users",
