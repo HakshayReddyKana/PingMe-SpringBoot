@@ -11,9 +11,9 @@ public class RedisSubscriberService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
 
-    public RedisSubscriberService(SimpMessagingTemplate messagingTemplate, ObjectMapper objectMapper) {
+    public RedisSubscriberService(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
-        this.objectMapper = objectMapper;
+        this.objectMapper = new ObjectMapper().registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
     }
 
     // This is called automatically by Redis whenever a message hits the "chat-topic" channel

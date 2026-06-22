@@ -28,12 +28,12 @@ public class MessageService {
     public record ReadReceipt(Long userId, UUID conversationId, String status) {}
 
 
-    public MessageService(MessageRepo messageRepo, ConversationRepo conversationRepo, UserService userService, RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
+    public MessageService(MessageRepo messageRepo, ConversationRepo conversationRepo, UserService userService, RedisTemplate<String, Object> redisTemplate) {
         this.messageRepo = messageRepo;
         this.conversationRepo = conversationRepo;
         this.userService = userService;
         this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
+        this.objectMapper = new ObjectMapper().registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
     }
 
     public Message processAndSendMessage(Message message, String senderUsername) {
