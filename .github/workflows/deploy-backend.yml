@@ -33,46 +33,8 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: chat-backend
-          IMAGE_TAG: latest
-          APP_PROPS: ${{ secrets.APPLICATION_PROPERTIES }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ap-south-1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,APP_PROPS,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
-          script: |
-            # 1. Securely inject the application.properties file onto the EC2 host
-            echo "$APP_PROPS" > /home/ubuntu/application.properties
-
-            # 2. Login to AWS ECR on the EC2 Instance to pull the image
-            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-            aws configure set default.region $AWS_REGION
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-
-            # 3. Pull the newest image
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-            # 4. Stop and remove the old running container (if it exists)
-            docker stop chat-backend-container || true
-            docker rm chat-backend-container || true
-
-            # 5. Stop the old raw Java systemd service to free up port 8080 (just in case!)
-            sudo systemctl stop springboot || true
-            sudo systemctl disable springboot || true
-
-            # 6. Run the new Docker container with the Volume Mount!
-            docker run -d \
-              --name chat-backend-container \
-              -p 8080:8080 \
-              --restart always \
-              -v /home/ubuntu/application.properties:/app/application.properties \
-              $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Trigger ASG Instance Refresh
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name chat-backend-asg \
+            --preferences '{"MinHealthyPercentage": 100}'
