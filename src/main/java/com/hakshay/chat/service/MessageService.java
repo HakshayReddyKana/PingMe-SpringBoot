@@ -1,5 +1,6 @@
 package com.hakshay.chat.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hakshay.chat.model.Conversation;
 import com.hakshay.chat.model.Message;
 import com.hakshay.chat.model.User;
@@ -8,6 +9,7 @@ import com.hakshay.chat.repo.MessageRepo;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -19,17 +21,19 @@ public class MessageService {
 
     private final MessageRepo messageRepo;
     private final ConversationRepo conversationRepo;
-    private final SimpMessagingTemplate messagingTemplate;
     private final UserService userService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public record ReadReceipt(Long userId, UUID conversationId, String status) {}
 
 
-    public MessageService(MessageRepo messageRepo, ConversationRepo conversationRepo, SimpMessagingTemplate messagingTemplate, UserService userService) {
+    public MessageService(MessageRepo messageRepo, ConversationRepo conversationRepo, UserService userService, RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
         this.messageRepo = messageRepo;
         this.conversationRepo = conversationRepo;
-        this.messagingTemplate = messagingTemplate;
         this.userService = userService;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public Message processAndSendMessage(Message message, String senderUsername) {
@@ -67,10 +71,19 @@ public class MessageService {
         message.setStatus("sent");
         Message savedMessage = messageRepo.save(message);
 
-        // 4. Broadcast over STOMP
-        messagingTemplate.convertAndSend("/topic/conversation/" + conv.getId(), savedMessage);
-        
+        // 4. Broadcast to REDIS instead of STOMP!
+        try {
+            String jsonMessage = objectMapper.writeValueAsString(savedMessage);
+            redisTemplate.convertAndSend("chat-topic", jsonMessage);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return savedMessage;
+
+
+//         4. Broadcast over STOMP
+//        messagingTemplate.convertAndSend("/topic/conversation/" + conv.getId(), savedMessage);
     }
     public Page<Message> getMessages(UUID conversationId, int page, int size) {
         return messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, PageRequest.of(page, size));
@@ -95,9 +108,15 @@ public class MessageService {
         int updatedCount = messageRepo.markMessagesAsRead(conversationId, user.getId());
 
         if (updatedCount > 0) {
-            // Because ReadReceipt is a custom Object, Java knows EXACTLY which method to call!
-            ReadReceipt receipt = new ReadReceipt(user.getId(), conversationId, "read");
-            messagingTemplate.convertAndSend("/topic/conversation/" + conversationId + "/receipts", receipt);
+            try {
+                ReadReceipt receipt = new ReadReceipt(user.getId(), conversationId, "read");
+                String jsonReceipt = objectMapper.writeValueAsString(receipt);
+                // Publish to our new secondary Redis topic!
+                redisTemplate.convertAndSend("receipt-topic", jsonReceipt);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
+
 }
