@@ -71,13 +71,17 @@ public class MessageService {
         message.setStatus("sent");
         Message savedMessage = messageRepo.save(message);
 
-        // 4. Broadcast to REDIS instead of STOMP!
+        // 4. Publish just the IDs directly to the raw connection to prevent double-escaping!
         try {
-            String jsonMessage = objectMapper.writeValueAsString(savedMessage);
-            redisTemplate.convertAndSend("chat-topic", jsonMessage);
+            String payload = "{\"messageId\":\"" + savedMessage.getId() + "\",\"conversationId\":\"" + conv.getId() + "\"}";
+            redisTemplate.getConnectionFactory().getConnection().publish(
+                    "chat-topic".getBytes(),
+                    payload.getBytes()
+            );
         } catch (Exception e) {
             e.printStackTrace();
         }
+
 
         return savedMessage;
 
@@ -111,11 +115,14 @@ public class MessageService {
             try {
                 ReadReceipt receipt = new ReadReceipt(user.getId(), conversationId, "read");
                 String jsonReceipt = objectMapper.writeValueAsString(receipt);
-                // Publish to our new secondary Redis topic!
-                redisTemplate.convertAndSend("receipt-topic", jsonReceipt);
+                redisTemplate.getConnectionFactory().getConnection().publish(
+                        "receipt-topic".getBytes(),
+                        jsonReceipt.getBytes()
+                );
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
         }
     }
 
