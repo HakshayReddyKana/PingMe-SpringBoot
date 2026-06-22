@@ -36,5 +36,5 @@ jobs:
       - name: Trigger ASG Instance Refresh
         run: |
           aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name chat-backend-asg \
+            --auto-scaling-group-name chat-asg \
             --preferences '{"MinHealthyPercentage": 100}'
