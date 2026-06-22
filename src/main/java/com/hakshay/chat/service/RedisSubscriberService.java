@@ -6,6 +6,7 @@ import com.hakshay.chat.model.Message;
 import com.hakshay.chat.repo.MessageRepo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -22,6 +23,7 @@ public class RedisSubscriberService {
         this.objectMapper = new ObjectMapper().registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
     }
 
+    @Transactional
     public void handleMessage(String messageJson) {
         try {
             JsonNode payload = objectMapper.readTree(messageJson);
@@ -39,6 +41,8 @@ public class RedisSubscriberService {
         }
     }
 
+
+    @Transactional
     public void handleReceipt(String receiptJson) {
         try {
             com.hakshay.chat.service.MessageService.ReadReceipt receipt =
