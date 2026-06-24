@@ -37,7 +37,7 @@ No manual server configuration is required.
 ## 🛠️ Tech Stack
 * **Core Application:** Java 21, Spring Boot 3, Spring WebSockets (STOMP Protocol), Spring Security, Spring Data JPA.
 * **Database & Caching:** PostgreSQL (AWS RDS), Redis (AWS ElastiCache).
-* **Cloud Infrastructure (AWS):** EC2, Application Load Balancer (ALB), Auto Scaling Groups (ASG), Elastic Container Registry (ECR), Secrets Manager, Certificate Manager (ACM), Route 53, CloudWatch, IAM.
+* **Cloud Infrastructure (AWS):** EC2, Application Load Balancer (ALB), Auto Scaling Groups (ASG), Elastic Container Registry (ECR), Secrets Manager, Certificate Manager (ACM), CloudWatch, IAM.
 * **DevOps:** Docker, GitHub Actions, Shell Scripting (`cloud-init`).
 
 ---
