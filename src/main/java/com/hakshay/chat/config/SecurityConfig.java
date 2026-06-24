@@ -82,8 +82,8 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 clientUrl,
-                clientUrl.replace("https://", "https://www."),
-                "http://localhost:3000"
+                clientUrl.replace("https://", "https://www.")
+//                "http://localhost:3000"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
